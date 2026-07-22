@@ -33,7 +33,7 @@ export default function CatMascot({ size = 'medium', className = '' }) {
       <div className="relative group cursor-pointer animate-float">
         <div className="absolute -inset-1 bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-300 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-300"></div>
         <img
-          src="/cat_photographer.png"
+          src="./cat_photographer.png"
           alt="사진 찍는 파스텔 고양이"
           className={`${sizeClasses[size] || sizeClasses.medium} relative object-contain drop-shadow-md rounded-2xl bg-white/40 p-1 border border-white/60 transition-transform group-hover:scale-105`}
         />

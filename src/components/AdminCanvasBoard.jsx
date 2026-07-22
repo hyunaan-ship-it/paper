@@ -1,4 +1,3 @@
-import React, { useState, useRef } from 'react';
 import {
   Move,
   Trash2,
@@ -15,7 +14,10 @@ import {
   Eye,
   EyeOff,
   Lock,
-  Heart
+  Heart,
+  Printer,
+  FileText,
+  LayoutGrid
 } from 'lucide-react';
 import MessageCard from './MessageCard';
 import html2canvas from 'html2canvas';
@@ -33,6 +35,7 @@ export default function AdminCanvasBoard({
 }) {
   const [selectedId, setSelectedId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [showPaperGuide, setShowPaperGuide] = useState(true);
   const canvasRef = useRef(null);
 
   const selectedMsg = messages.find((m) => m.id === selectedId);
@@ -46,15 +49,15 @@ export default function AdminCanvasBoard({
     onUpdateMessage(id, { width: newWidth, height: newHeight });
   };
 
-  // Auto Grid Align tool for Admin
-  const handleAutoGridAlign = () => {
-    const colCount = 3;
-    const itemWidth = 320;
-    const itemHeight = 260;
-    const gapX = 30;
-    const gapY = 30;
-    const startX = 40;
-    const startY = 40;
+  // Auto Grid Align for 15+ People (A4 Format - 4 columns x 4 rows)
+  const handleAlignA4 = () => {
+    const colCount = 4;
+    const itemWidth = 290;
+    const itemHeight = 210;
+    const gapX = 20;
+    const gapY = 20;
+    const startX = 45;
+    const startY = 45;
 
     const updated = messages.map((msg, idx) => {
       const col = idx % colCount;
@@ -63,6 +66,8 @@ export default function AdminCanvasBoard({
         ...msg,
         x: startX + col * (itemWidth + gapX),
         y: startY + row * (itemHeight + gapY),
+        width: itemWidth,
+        height: itemHeight,
         rotation: 0
       };
     });
@@ -70,20 +75,51 @@ export default function AdminCanvasBoard({
     onBatchUpdateMessages(updated);
   };
 
-  // Export Canvas to PNG Image
+  // Auto Grid Align for A3 Format (5 columns x 4 rows)
+  const handleAlignA3 = () => {
+    const colCount = 5;
+    const itemWidth = 270;
+    const itemHeight = 195;
+    const gapX = 16;
+    const gapY = 16;
+    const startX = 35;
+    const startY = 35;
+
+    const updated = messages.map((msg, idx) => {
+      const col = idx % colCount;
+      const row = Math.floor(idx / colCount);
+      return {
+        ...msg,
+        x: startX + col * (itemWidth + gapX),
+        y: startY + row * (itemHeight + gapY),
+        width: itemWidth,
+        height: itemHeight,
+        rotation: 0
+      };
+    });
+
+    onBatchUpdateMessages(updated);
+  };
+
+  // Trigger Native Browser Print Dialog (A4 / A3 Print)
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // High-Resolution PNG Export (scale: 3 for high-density physical printing)
   const handleExportPNG = async () => {
     if (!canvasRef.current) return;
     setIsExporting(true);
     try {
       const canvas = await html2canvas(canvasRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         backgroundColor: '#faf8f5'
       });
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
-      link.download = `${receiver}_롤링페이퍼.png`;
+      link.download = `${receiver}_롤링페이퍼_인쇄용.png`;
       link.click();
     } catch (err) {
       console.error('Failed to export canvas image', err);
@@ -139,11 +175,8 @@ export default function AdminCanvasBoard({
           <div className="flex items-center gap-2">
             <span className="bg-purple-700 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5 text-amber-300" />
-              관리자 모드 활성화됨
+              관리자 모드 (15명 이상 A4/A3 인쇄용)
             </span>
-            <p className="text-xs text-purple-200 hidden md:inline">
-              카드를 마우스로 자유롭게 크기 조절/이동하고, 공개 여부를 설정하세요.
-            </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -158,24 +191,47 @@ export default function AdminCanvasBoard({
               title="일반 사용자가 롤링페이퍼 보드를 볼 수 있는지 설정합니다"
             >
               {isBoardPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-              <span>{isBoardPublished ? '🌐 보드 전체 공개 중' : '🔒 보드 비공개 모드'}</span>
+              <span>{isBoardPublished ? '🌐 보드 공개 중' : '🔒 보드 비공개 모드'}</span>
             </button>
 
+            {/* A4 Alignment */}
             <button
-              onClick={handleAutoGridAlign}
+              onClick={handleAlignA4}
               className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+              title="15~16명이 작성한 메시지를 가로 A4 용지에 딱 맞게 4x4 그리드로 정렬합니다"
             >
-              <Grid className="w-3.5 h-3.5 text-pink-300" />
-              <span>그리드 정렬</span>
+              <LayoutGrid className="w-3.5 h-3.5 text-pink-300" />
+              <span>📐 15인용 A4 정렬 (4x4)</span>
             </button>
 
+            {/* A3 Alignment */}
+            <button
+              onClick={handleAlignA3}
+              className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+              title="20명 이상 메시지를 가로 A3 용지에 맞게 5x4 그리드로 정렬합니다"
+            >
+              <Grid className="w-3.5 h-3.5 text-amber-300" />
+              <span>📐 A3 정렬 (5x4)</span>
+            </button>
+
+            {/* Print Direct */}
+            <button
+              onClick={handlePrint}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition"
+              title="A4 / A3 종이로 바로 인쇄하거나 PDF로 저장합니다"
+            >
+              <Printer className="w-3.5 h-3.5 text-blue-200" />
+              <span>𖤓 A4/A3 인쇄 · PDF</span>
+            </button>
+
+            {/* High-Res PNG Export */}
             <button
               onClick={handleExportPNG}
               disabled={isExporting}
               className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition"
             >
               <Camera className="w-3.5 h-3.5" />
-              <span>{isExporting ? '이미지 생성 중...' : '전체 롤링페이퍼 이미지 저장'}</span>
+              <span>{isExporting ? '고화질 생성 중...' : '고화질 PNG 저장'}</span>
             </button>
           </div>
 
@@ -304,12 +360,21 @@ export default function AdminCanvasBoard({
             setSelectedId(null);
           }
         }}
-        className="flex-1 board-pattern relative min-h-[850px] w-full p-8 overflow-auto border-t border-amber-200/50"
+        className="flex-1 board-pattern relative min-h-[1000px] min-w-[1320px] w-full p-8 overflow-auto border-t border-amber-200/50"
       >
+        {/* A4 Paper Print Guideline Frame (Landscape) */}
+        {isAdmin && (
+          <div className="absolute top-4 left-4 w-[1280px] h-[920px] border-2 border-dashed border-purple-400/40 rounded-3xl pointer-events-none flex items-start justify-end p-4">
+            <span className="bg-purple-100/90 text-purple-700 text-[11px] font-bold px-2.5 py-1 rounded-md shadow-sm border border-purple-200 no-print">
+              📄 가로 A4 인쇄 용지 영역 가이드 (4x4 16명 카드 보관함)
+            </span>
+          </div>
+        )}
+
         {/* Background Cat Mascot Image Watermark */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-20 select-none">
           <img
-            src="/cat_photographer.png"
+            src="./cat_photographer.png"
             alt="보드 백그라운드 파스텔 고양이"
             className="w-[480px] h-[480px] object-contain drop-shadow-sm animate-pulse-subtle"
           />

@@ -175,3 +175,37 @@ body {
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Print Media Styles for A4 / A3 Printing & PDF Save */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  body {
+    background: #faf8f5 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide Header, Footer, Admin Toolbar, Buttons, Status Banners during print */
+  header, footer, nav, button, .no-print, input, textarea, select {
+    display: none !important;
+  }
+
+  .board-pattern {
+    background-color: #faf8f5 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure exact colors print on paper */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
