@@ -26,6 +26,7 @@ export default function UserMessageForm({ receiver, onAddMessage, onSuccessRedir
   const [password, setPassword] = useState('');
   const [color, setColor] = useState(PASTEL_COLORS[0].value);
   const [font, setFont] = useState(FONTS[0].value);
+  const [fontSize, setFontSize] = useState(18);
   const [sticker, setSticker] = useState(STICKERS[0]);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -42,6 +43,7 @@ export default function UserMessageForm({ receiver, onAddMessage, onSuccessRedir
       password: password.trim(),
       color,
       font,
+      fontSize,
       sticker,
     });
 
@@ -187,6 +189,35 @@ export default function UserMessageForm({ receiver, onAddMessage, onSuccessRedir
             </div>
           </div>
 
+          {/* Font Size Selector */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-2 flex items-center gap-1">
+              <Type className="w-3.5 h-3.5 text-purple-500" />
+              글자 크기
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { label: '작게 (15px)', size: 15 },
+                { label: '보통 (18px)', size: 18 },
+                { label: '크게 (22px)', size: 22 },
+                { label: '아주 크게 (26px)', size: 26 },
+              ].map((item) => (
+                <button
+                  key={item.size}
+                  type="button"
+                  onClick={() => setFontSize(item.size)}
+                  className={`py-2 px-3 rounded-xl border text-xs text-center font-semibold transition ${
+                    fontSize === item.size
+                      ? 'border-purple-500 bg-purple-50 text-purple-700 font-bold shadow-sm'
+                      : 'border-gray-200 bg-white/80 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Sticker Selector */}
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase mb-2 flex items-center gap-1">
@@ -251,7 +282,10 @@ export default function UserMessageForm({ receiver, onAddMessage, onSuccessRedir
             </div>
 
             {/* Content */}
-            <div className="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
+            <div
+              className="text-gray-700 leading-relaxed whitespace-pre-wrap"
+              style={{ fontSize: `${fontSize}px` }}
+            >
               {content || '여기에 작성하신 따뜻한 롤링페이퍼 메시지 내용이 표시됩니다.'}
             </div>
 

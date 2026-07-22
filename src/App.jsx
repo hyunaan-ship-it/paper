@@ -12,6 +12,9 @@ import {
   deleteMessage,
   getReceiverName,
   setReceiverName,
+  getIsBoardPublished,
+  setIsBoardPublished,
+  fetchBoardPublishedAsync,
   fetchMessagesAsync,
   fetchReceiverNameAsync,
   subscribeToRealtimeChanges,
@@ -23,6 +26,7 @@ import { isSupabaseConfigured } from './utils/supabaseClient';
 export default function App() {
   const [receiver, setReceiver] = useState(getReceiverName());
   const [messages, setMessages] = useState(getMessages());
+  const [isBoardPublished, setIsBoardPublishedState] = useState(getIsBoardPublished());
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('board');
@@ -32,6 +36,8 @@ export default function App() {
     const initData = async () => {
       const rec = await fetchReceiverNameAsync();
       setReceiver(rec);
+      const pub = await fetchBoardPublishedAsync();
+      setIsBoardPublishedState(pub);
       const msgs = await fetchMessagesAsync();
       setMessages(msgs);
     };
@@ -42,6 +48,7 @@ export default function App() {
     const handleStorageUpdate = () => {
       setMessages(getMessages());
       setReceiver(getReceiverName());
+      setIsBoardPublishedState(getIsBoardPublished());
     };
     window.addEventListener('storage-messages-updated', handleStorageUpdate);
     window.addEventListener('storage', handleStorageUpdate);
@@ -50,6 +57,7 @@ export default function App() {
     const unsubscribe = subscribeToRealtimeChanges((updatedMsgs) => {
       setMessages([...updatedMsgs]);
       setReceiver(getReceiverName());
+      setIsBoardPublishedState(getIsBoardPublished());
     });
 
     return () => {
@@ -58,6 +66,12 @@ export default function App() {
       unsubscribe();
     };
   }, []);
+
+  const handleToggleBoardPublished = async () => {
+    const nextVal = !isBoardPublished;
+    await setIsBoardPublished(nextVal);
+    setIsBoardPublishedState(nextVal);
+  };
 
   const handleSetReceiver = async (name) => {
     await setReceiverName(name);
@@ -128,9 +142,12 @@ export default function App() {
             messages={messages}
             receiver={receiver}
             isAdmin={isAdmin}
+            isBoardPublished={isBoardPublished}
+            onToggleBoardPublished={handleToggleBoardPublished}
             onUpdateMessage={handleUpdateMessage}
             onDeleteMessage={handleDeleteMessage}
             onBatchUpdateMessages={handleBatchUpdateMessages}
+            onGoToWrite={() => setActiveTab('write')}
           />
         )}
 

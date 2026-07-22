@@ -15,6 +15,7 @@ export default function MyMessagesView({
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [editColor, setEditColor] = useState('');
+  const [editFontSize, setEditFontSize] = useState(18);
   const [hasSearched, setHasSearched] = useState(false);
 
   const handleAuthenticate = (e) => {
@@ -32,12 +33,13 @@ export default function MyMessagesView({
     setEditingId(msg.id);
     setEditContent(msg.content);
     setEditColor(msg.color);
+    setEditFontSize(msg.fontSize || 18);
   };
 
   const handleSaveEdit = (id) => {
-    onUpdateMessage(id, { content: editContent, color: editColor });
+    onUpdateMessage(id, { content: editContent, color: editColor, fontSize: editFontSize });
     setAuthenticatedMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, content: editContent, color: editColor } : m))
+      prev.map((m) => (m.id === id ? { ...m, content: editContent, color: editColor, fontSize: editFontSize } : m))
     );
     setEditingId(null);
   };
@@ -170,17 +172,42 @@ export default function MyMessagesView({
                         className="w-full p-3 bg-white/90 border border-gray-300 rounded-xl text-sm leading-relaxed"
                         rows={4}
                       />
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-600 font-bold">카드 색상:</span>
-                        {['#fce7f3', '#fef9c3', '#e0f2fe', '#dcfce7', '#f3e8ff'].map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => setEditColor(c)}
-                            className={`w-6 h-6 rounded-full border ${editColor === c ? 'ring-2 ring-purple-600 scale-110' : ''}`}
-                            style={{ backgroundColor: c }}
-                          />
-                        ))}
+                      <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-600 font-bold">카드 색상:</span>
+                          {['#fce7f3', '#fef9c3', '#e0f2fe', '#dcfce7', '#f3e8ff'].map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => setEditColor(c)}
+                              className={`w-6 h-6 rounded-full border ${editColor === c ? 'ring-2 ring-purple-600 scale-110' : ''}`}
+                              style={{ backgroundColor: c }}
+                            />
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-gray-600 font-bold">글자 크기:</span>
+                          {[
+                            { label: '작게', size: 15 },
+                            { label: '보통', size: 18 },
+                            { label: '크게', size: 22 },
+                            { label: '아주크게', size: 26 },
+                          ].map((item) => (
+                            <button
+                              key={item.size}
+                              type="button"
+                              onClick={() => setEditFontSize(item.size)}
+                              className={`px-2 py-0.5 rounded text-xs border font-semibold ${
+                                editFontSize === item.size
+                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                                  : 'bg-white/80 text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div className="flex items-center justify-end gap-2 pt-2">
                         <button
@@ -199,7 +226,10 @@ export default function MyMessagesView({
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap mb-4">
+                      <p
+                        className="text-gray-800 leading-relaxed whitespace-pre-wrap mb-4"
+                        style={{ fontSize: `${msg.fontSize || 18}px` }}
+                      >
                         {msg.content}
                       </p>
 

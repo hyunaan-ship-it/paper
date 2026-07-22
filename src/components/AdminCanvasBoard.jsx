@@ -11,7 +11,11 @@ import {
   RotateCw,
   Sparkles,
   Shield,
-  Edit
+  Edit,
+  Eye,
+  EyeOff,
+  Lock,
+  Heart
 } from 'lucide-react';
 import MessageCard from './MessageCard';
 import html2canvas from 'html2canvas';
@@ -20,9 +24,12 @@ export default function AdminCanvasBoard({
   messages,
   receiver,
   isAdmin,
+  isBoardPublished = true,
+  onToggleBoardPublished,
   onUpdateMessage,
   onDeleteMessage,
-  onBatchUpdateMessages
+  onBatchUpdateMessages,
+  onGoToWrite
 }) {
   const [selectedId, setSelectedId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -30,9 +37,13 @@ export default function AdminCanvasBoard({
 
   const selectedMsg = messages.find((m) => m.id === selectedId);
 
-  // Position updates during drag
+  // Position & Size updates during drag
   const handleUpdatePosition = (id, newX, newY) => {
     onUpdateMessage(id, { x: newX, y: newY });
+  };
+
+  const handleUpdateSize = (id, newWidth, newHeight) => {
+    onUpdateMessage(id, { width: newWidth, height: newHeight });
   };
 
   // Auto Grid Align tool for Admin
@@ -82,6 +93,42 @@ export default function AdminCanvasBoard({
     }
   };
 
+  // Render Private Board Screen for normal users when board is not published
+  if (!isAdmin && !isBoardPublished) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-140px)] p-6 text-center">
+        <div className="max-w-lg glass-panel p-8 sm:p-10 shadow-2xl relative border-2 border-purple-200 animate-fadeIn">
+          <div className="w-20 h-20 bg-purple-100 text-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-inner">
+            <Lock className="w-10 h-10 animate-bounce" />
+          </div>
+
+          <span className="bg-purple-100 text-purple-700 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+            Surprise Preparation 🌸
+          </span>
+
+          <h3 className="text-2xl font-black text-gray-800 mt-3 mb-2">
+            {receiver}님을 위한 서프라이즈 준비 중! 🔒
+          </h3>
+
+          <p className="text-gray-600 text-sm leading-relaxed mb-6">
+            현재 롤링페이퍼 카드들은 수신자({receiver}님)에게 미리 스포일러되지 않도록 <b className="text-purple-600 font-bold">비공개 작성 기간</b>으로 설정되어 있습니다.<br /><br />
+            관리자가 최종 전달 시 보드를 <b>'전체 공개'</b>로 변경하면 작성된 모든 메시지들이 한눈에 예쁘게 공개됩니다 💌
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={onGoToWrite}
+              className="btn-primary w-full sm:w-auto py-3 px-6 text-sm font-bold shadow-lg"
+            >
+              <Heart className="w-4 h-4 text-pink-300 fill-pink-300" />
+              <span>나도 따뜻한 메시지 남기기 ✍️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-100px)]">
       
@@ -95,17 +142,31 @@ export default function AdminCanvasBoard({
               관리자 모드 활성화됨
             </span>
             <p className="text-xs text-purple-200 hidden md:inline">
-              카드를 자유롭게 마우스로 끌어 이동하고, 아래 조작바로 글자 크기/카드 크기/삭제를 편집하세요.
+              카드를 마우스로 자유롭게 크기 조절/이동하고, 공개 여부를 설정하세요.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Public / Private Toggle Switch */}
+            <button
+              onClick={onToggleBoardPublished}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition ${
+                isBoardPublished
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
+              }`}
+              title="일반 사용자가 롤링페이퍼 보드를 볼 수 있는지 설정합니다"
+            >
+              {isBoardPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              <span>{isBoardPublished ? '🌐 보드 전체 공개 중' : '🔒 보드 비공개 모드'}</span>
+            </button>
+
             <button
               onClick={handleAutoGridAlign}
               className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
             >
               <Grid className="w-3.5 h-3.5 text-pink-300" />
-              <span>그리드 자동 정렬</span>
+              <span>그리드 정렬</span>
             </button>
 
             <button
@@ -269,6 +330,7 @@ export default function AdminCanvasBoard({
               isSelected={selectedId === msg.id}
               onSelect={(id) => setSelectedId(id)}
               onUpdatePosition={handleUpdatePosition}
+              onUpdateSize={handleUpdateSize}
               onDelete={onDeleteMessage}
             />
           ))

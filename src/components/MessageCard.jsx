@@ -54,6 +54,36 @@ export default function MessageCard({
     window.addEventListener('mouseup', handleMouseUp);
   };
 
+  // Handle Mouse Drag for resizing (width & height)
+  const handleResizeMouseDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isAdmin && onSelect) onSelect(msg.id);
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialWidth = cardWidth;
+    const initialHeight = cardHeight;
+
+    const handleMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      const newWidth = Math.max(180, Math.min(650, initialWidth + deltaX));
+      const newHeight = Math.max(140, Math.min(650, initialHeight + deltaY));
+      if (onUpdateSize) {
+        onUpdateSize(msg.id, newWidth, newHeight);
+      }
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
   return (
     <div
       onClick={() => isAdmin && onSelect(msg.id)}
@@ -125,8 +155,22 @@ export default function MessageCard({
 
       {/* Selection Border Glow */}
       {isSelected && isAdmin && (
-        <div className="absolute -bottom-2 -right-2 bg-purple-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow">
+        <div className="absolute -bottom-2 left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow">
           선택됨
+        </div>
+      )}
+
+      {/* Mouse Drag Resize Handle (Bottom-Right) */}
+      {(isAdmin || isSelected) && (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          className="absolute -bottom-2.5 -right-2.5 w-7 h-7 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center cursor-se-resize shadow-lg z-40 transition-transform hover:scale-125 group/resize border-2 border-white"
+          title="마우스로 드래그하여 크기 조절"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+          <span className="absolute -top-7 right-0 bg-gray-900 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover/resize:opacity-100 transition whitespace-nowrap pointer-events-none font-bold shadow">
+            드래그 크기 조절 ↘
+          </span>
         </div>
       )}
     </div>
