@@ -281,29 +281,38 @@ export const deleteMessage = async (id) => {
 export const subscribeToRealtimeChanges = (onUpdateCallback) => {
   if (!isSupabaseConfigured || !supabase) return () => {};
 
-  const channel = supabase
-    .channel('rolling-paper-realtime')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'messages' },
-      async () => {
-        const latest = await fetchMessagesAsync();
-        onUpdateCallback(latest);
-      }
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'receiver_settings' },
-      async () => {
-        await fetchReceiverNameAsync();
-        onUpdateCallback(getMessages());
-      }
-    )
-    .subscribe();
+  try {
+    const channel = supabase
+      .channel('rolling-paper-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'messages' },
+        async () => {
+          const latest = await fetchMessagesAsync();
+          onUpdateCallback(latest);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'receiver_settings' },
+        async () => {
+          await fetchReceiverNameAsync();
+          onUpdateCallback(getMessages());
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (err) {
+        console.warn('Failed to remove channel:', err);
+      }
+    };
+  } catch (err) {
+    console.warn('Realtime subscription error:', err);
+    return () => {};
+  }
 };
 
 export const exportDataJSON = () => {
