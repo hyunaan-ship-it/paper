@@ -192,7 +192,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-white/60 backdrop-blur-sm border-t border-gray-200/60 py-4 px-6 text-center text-xs text-gray-500">
-        <p>© 2026 롤링페이퍼 맘 (Rolling Paper Studio) - 인사이동 구성원을 위한 따뜻한 축하 서비스 🌸</p>
+        <p>© 2026 롤링페이퍼 (Rolling Paper)</p>
       </footer>
 
       {/* Admin Authentication Modal */}

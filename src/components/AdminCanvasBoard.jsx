@@ -151,7 +151,7 @@ export default function AdminCanvasBoard({
     window.print();
   };
 
-  // High-Resolution PNG Export
+  // High-Resolution PNG Export (Current Page)
   const handleExportPNG = async () => {
     if (!canvasRef.current) return;
     setIsExporting(true);
@@ -170,6 +170,40 @@ export default function AdminCanvasBoard({
       console.error('Failed to export canvas image', err);
       alert('이미지 저장 중 오류가 발생했습니다.');
     } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // High-Resolution PNG Export (ALL Pages at once)
+  const handleExportAllPNG = async () => {
+    if (!canvasRef.current) return;
+    setIsExporting(true);
+    const originalPage = currentPage;
+    try {
+      for (let p = 1; p <= totalPages; p++) {
+        onChangePage(p);
+        // Wait 350ms for React re-render of page p cards
+        await new Promise((r) => setTimeout(r, 350));
+
+        const canvas = await html2canvas(canvasRef.current, {
+          scale: 3,
+          useCORS: true,
+          backgroundColor: '#faf8f5'
+        });
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `${receiver}_롤링페이퍼_${p}페이지_${paperSize}.png`;
+        link.click();
+
+        // Delay between downloads so browser popup blocker doesn't block sequential downloads
+        await new Promise((r) => setTimeout(r, 450));
+      }
+    } catch (err) {
+      console.error('Failed to export all pages image', err);
+      alert('전체 페이지 이미지 저장 중 오류가 발생했습니다.');
+    } finally {
+      onChangePage(originalPage);
       setIsExporting(false);
     }
   };
@@ -328,15 +362,30 @@ export default function AdminCanvasBoard({
               <span>𖤓 인쇄 · PDF</span>
             </button>
 
-            {/* High-Res PNG Export */}
-            <button
-              onClick={handleExportPNG}
-              disabled={isExporting}
-              className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition"
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>{isExporting ? '생성 중...' : `${currentPage}P PNG 저장`}</span>
-            </button>
+            {/* High-Res PNG Export (Single Page & All Pages) */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleExportPNG}
+                disabled={isExporting}
+                className="px-2.5 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition disabled:opacity-50"
+                title="현재 보이고 있는 1개 페이지를 PNG 이미지로 저장합니다"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>{isExporting ? '생성 중...' : `${currentPage}P PNG 저장`}</span>
+              </button>
+
+              {totalPages > 1 && (
+                <button
+                  onClick={handleExportAllPNG}
+                  disabled={isExporting}
+                  className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white rounded-lg text-xs font-black flex items-center gap-1.5 shadow-md transition disabled:opacity-50 animate-pulse-subtle"
+                  title="모든 페이지(1P~전체)를 한 번에 이미지 파일로 일괄 저장합니다"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{isExporting ? '전체 저장 중...' : `📸 전체(${totalPages}개) 페이지 한 번에 저장`}</span>
+                </button>
+              )}
+            </div>
           </div>
 
         </div>
