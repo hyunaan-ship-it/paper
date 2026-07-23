@@ -44,7 +44,7 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-md border-b border-amber-100 shadow-sm px-4 sm:px-8 py-3">
+    <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-md border-b border-amber-100 shadow-sm px-4 sm:px-8 py-3 no-print">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Left: Title */}

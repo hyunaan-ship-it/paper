@@ -116,7 +116,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col font-primary">
       {/* Top Status Banner if Supabase is active */}
       {isSupabaseConfigured && (
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[11px] font-bold py-1 px-4 text-center shadow-inner flex items-center justify-center gap-1.5">
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[11px] font-bold py-1 px-4 text-center shadow-inner flex items-center justify-center gap-1.5 no-print">
           <span className="w-2 h-2 rounded-full bg-green-300 animate-ping"></span>
           <span>Supabase 실시간 클라우드 DB 연동 중 (모든 사람과 동기화됩니다)</span>
         </div>

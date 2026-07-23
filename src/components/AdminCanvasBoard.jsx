@@ -36,7 +36,7 @@ export default function AdminCanvasBoard({
 }) {
   const [selectedId, setSelectedId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [showPaperGuide, setShowPaperGuide] = useState(true);
+  const [paperSize, setPaperSize] = useState('A4'); // 'A4' or 'A3'
   const canvasRef = useRef(null);
 
   const selectedMsg = messages.find((m) => m.id === selectedId);
@@ -52,6 +52,7 @@ export default function AdminCanvasBoard({
 
   // Auto Grid Align for 15+ People (A4 Format - 4 columns x 4 rows)
   const handleAlignA4 = () => {
+    setPaperSize('A4');
     const colCount = 4;
     const itemWidth = 290;
     const itemHeight = 210;
@@ -78,13 +79,14 @@ export default function AdminCanvasBoard({
 
   // Auto Grid Align for A3 Format (5 columns x 4 rows)
   const handleAlignA3 = () => {
+    setPaperSize('A3');
     const colCount = 5;
-    const itemWidth = 270;
-    const itemHeight = 195;
-    const gapX = 16;
-    const gapY = 16;
-    const startX = 35;
-    const startY = 35;
+    const itemWidth = 290;
+    const itemHeight = 210;
+    const gapX = 20;
+    const gapY = 20;
+    const startX = 40;
+    const startY = 40;
 
     const updated = messages.map((msg, idx) => {
       const col = idx % colCount;
@@ -102,8 +104,16 @@ export default function AdminCanvasBoard({
     onBatchUpdateMessages(updated);
   };
 
-  // Trigger Native Browser Print Dialog (A4 / A3 Print)
+  // Trigger Native Browser Print Dialog with dynamic A4/A3 paper size
   const handlePrint = () => {
+    const existingStyle = document.getElementById('dynamic-print-paper-size');
+    if (existingStyle) existingStyle.remove();
+
+    const styleEl = document.createElement('style');
+    styleEl.id = 'dynamic-print-paper-size';
+    styleEl.innerHTML = `@media print { @page { size: ${paperSize === 'A3' ? 'A3' : 'A4'} landscape; margin: 6mm; } }`;
+    document.head.appendChild(styleEl);
+
     window.print();
   };
 
@@ -120,7 +130,7 @@ export default function AdminCanvasBoard({
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
-      link.download = `${receiver}_롤링페이퍼_인쇄용.png`;
+      link.download = `${receiver}_롤링페이퍼_${paperSize}_인쇄용.png`;
       link.click();
     } catch (err) {
       console.error('Failed to export canvas image', err);
@@ -171,12 +181,12 @@ export default function AdminCanvasBoard({
       
       {/* Top Admin Control Bar (Visible when Admin is logged in) */}
       {isAdmin && (
-        <div className="bg-purple-900 text-white px-4 py-3 shadow-md sticky top-16 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-purple-700">
+        <div className="bg-purple-900 text-white px-4 py-3 shadow-md sticky top-16 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-purple-700 no-print">
           
           <div className="flex items-center gap-2">
             <span className="bg-purple-700 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5 text-amber-300" />
-              관리자 모드 (15명 이상 A4/A3 인쇄용)
+              관리자 모드 ({paperSize} 규격 모드)
             </span>
           </div>
 
@@ -195,14 +205,34 @@ export default function AdminCanvasBoard({
               <span>{isBoardPublished ? '🌐 보드 공개 중' : '🔒 보드 비공개 모드'}</span>
             </button>
 
+            {/* Paper Size Switch Buttons */}
+            <div className="flex items-center bg-purple-950 p-0.5 rounded-lg border border-purple-700 text-xs">
+              <button
+                onClick={() => setPaperSize('A4')}
+                className={`px-2.5 py-1 rounded-md font-bold transition ${
+                  paperSize === 'A4' ? 'bg-purple-600 text-white shadow' : 'text-purple-300 hover:text-white'
+                }`}
+              >
+                📄 A4 규격
+              </button>
+              <button
+                onClick={() => setPaperSize('A3')}
+                className={`px-2.5 py-1 rounded-md font-bold transition ${
+                  paperSize === 'A3' ? 'bg-purple-600 text-white shadow' : 'text-purple-300 hover:text-white'
+                }`}
+              >
+                📄 A3 대형 규격
+              </button>
+            </div>
+
             {/* A4 Alignment */}
             <button
               onClick={handleAlignA4}
               className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
-              title="15~16명이 작성한 메시지를 가로 A4 용지에 딱 맞게 4x4 그리드로 정렬합니다"
+              title="15~16명이 작성한 메시지를 가로 A4 용지에 맞게 4x4 그리드로 정렬합니다"
             >
               <LayoutGrid className="w-3.5 h-3.5 text-pink-300" />
-              <span>📐 15인용 A4 정렬 (4x4)</span>
+              <span>📐 A4 정렬 (4x4)</span>
             </button>
 
             {/* A3 Alignment */}
@@ -219,10 +249,10 @@ export default function AdminCanvasBoard({
             <button
               onClick={handlePrint}
               className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition"
-              title="A4 / A3 종이로 바로 인쇄하거나 PDF로 저장합니다"
+              title={`${paperSize} 종이로 바로 인쇄하거나 PDF로 저장합니다`}
             >
               <Printer className="w-3.5 h-3.5 text-blue-200" />
-              <span>𖤓 A4/A3 인쇄 · PDF</span>
+              <span>𖤓 {paperSize} 직접 인쇄 / PDF</span>
             </button>
 
             {/* High-Res PNG Export */}
@@ -232,7 +262,7 @@ export default function AdminCanvasBoard({
               className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition"
             >
               <Camera className="w-3.5 h-3.5" />
-              <span>{isExporting ? '고화질 생성 중...' : '고화질 PNG 저장'}</span>
+              <span>{isExporting ? '고화질 생성 중...' : `${paperSize} PNG 이미지 저장`}</span>
             </button>
           </div>
 
@@ -241,7 +271,7 @@ export default function AdminCanvasBoard({
 
       {/* Selected Card Control Bar (Floating when a card is selected in Admin mode) */}
       {isAdmin && selectedMsg && (
-        <div className="bg-white/90 backdrop-blur-md border border-purple-200 p-4 shadow-xl fixed bottom-6 left-1/2 -translate-x-1/2 z-40 rounded-2xl max-w-2xl w-[90%] animate-fadeIn space-y-3">
+        <div className="bg-white/90 backdrop-blur-md border border-purple-200 p-4 shadow-xl fixed bottom-6 left-1/2 -translate-x-1/2 z-40 rounded-2xl max-w-3xl w-[92%] animate-fadeIn space-y-3 no-print">
           
           <div className="flex items-center justify-between border-b border-gray-100 pb-2">
             <div className="flex items-center gap-2">
@@ -252,13 +282,13 @@ export default function AdminCanvasBoard({
             </div>
             <button
               onClick={() => setSelectedId(null)}
-              className="text-xs text-gray-400 hover:text-gray-600"
+              className="text-xs text-gray-400 hover:text-gray-600 font-bold"
             >
               닫기 ✖
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             {/* Font Size Slider */}
             <div>
               <label className="font-bold text-gray-700 flex items-center justify-between mb-1">
@@ -290,10 +320,30 @@ export default function AdminCanvasBoard({
               <input
                 type="range"
                 min={200}
-                max={500}
+                max={550}
                 value={selectedMsg.width || 280}
                 onChange={(e) =>
                   onUpdateMessage(selectedMsg.id, { width: parseInt(e.target.value) })
+                }
+                className="w-full accent-purple-600 cursor-pointer"
+              />
+            </div>
+
+            {/* Card Height Slider */}
+            <div>
+              <label className="font-bold text-gray-700 flex items-center justify-between mb-1">
+                <span className="flex items-center gap-1">
+                  <Maximize2 className="w-3.5 h-3.5 text-purple-500 rotate-90" /> 카드 높이
+                </span>
+                <span className="text-purple-600 font-extrabold">{selectedMsg.height || 220}px</span>
+              </label>
+              <input
+                type="range"
+                min={150}
+                max={550}
+                value={selectedMsg.height || 220}
+                onChange={(e) =>
+                  onUpdateMessage(selectedMsg.id, { height: parseInt(e.target.value) })
                 }
                 className="w-full accent-purple-600 cursor-pointer"
               />
@@ -303,7 +353,7 @@ export default function AdminCanvasBoard({
             <div>
               <label className="font-bold text-gray-700 flex items-center justify-between mb-1">
                 <span className="flex items-center gap-1">
-                  <RotateCw className="w-3.5 h-3.5 text-purple-500" /> 카드 회전
+                  <RotateCw className="w-3.5 h-3.5 text-purple-500" /> 회전
                 </span>
                 <span className="text-purple-600 font-extrabold">{selectedMsg.rotation || 0}°</span>
               </label>
@@ -361,23 +411,33 @@ export default function AdminCanvasBoard({
             setSelectedId(null);
           }
         }}
-        className="flex-1 board-pattern relative min-h-[1000px] min-w-[1320px] w-full p-8 overflow-auto border-t border-amber-200/50"
+        className={`flex-1 board-pattern relative w-full p-8 overflow-auto border-t border-amber-200/50 ${
+          paperSize === 'A3' ? 'min-h-[1180px] min-w-[1640px]' : 'min-h-[1000px] min-w-[1320px]'
+        }`}
       >
-        {/* A4 Paper Print Guideline Frame (Landscape) */}
+        {/* Paper Print Guideline Frame (Landscape) */}
         {isAdmin && (
-          <div className="absolute top-4 left-4 w-[1280px] h-[920px] border-2 border-dashed border-purple-400/40 rounded-3xl pointer-events-none flex items-start justify-end p-4">
+          <div
+            data-html2canvas-ignore="true"
+            className={`absolute top-4 left-4 border-2 border-dashed border-purple-400/40 rounded-3xl pointer-events-none flex items-start justify-end p-4 no-print ${
+              paperSize === 'A3' ? 'w-[1580px] h-[1100px]' : 'w-[1280px] h-[920px]'
+            }`}
+          >
             <span className="bg-purple-100/90 text-purple-700 text-[11px] font-bold px-2.5 py-1 rounded-md shadow-sm border border-purple-200 no-print">
-              📄 가로 A4 인쇄 용지 영역 가이드 (4x4 16명 카드 보관함)
+              {paperSize === 'A3'
+                ? '📄 가로 A3 대형 인쇄 용지 영역 가이드 (5x4 20명 카드 보관함)'
+                : '📄 가로 A4 인쇄 용지 영역 가이드 (4x4 16명 카드 보관함)'}
             </span>
           </div>
         )}
 
         {/* Background Cat Mascot Image Watermark */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-20 select-none">
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-25 select-none">
           <img
             src="./cat_photographer.png"
             alt="보드 백그라운드 파스텔 고양이"
             className="w-[480px] h-[480px] object-contain drop-shadow-sm animate-pulse-subtle"
+            style={{ mixBlendMode: 'multiply' }}
           />
         </div>
 

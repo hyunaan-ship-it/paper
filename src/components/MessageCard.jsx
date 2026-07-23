@@ -88,7 +88,7 @@ export default function MessageCard({
     <div
       onClick={() => isAdmin && onSelect(msg.id)}
       onMouseDown={handleMouseDown}
-      className={`absolute rounded-2xl p-5 shadow-lg transition-shadow border select-none ${
+      className={`absolute rounded-2xl p-5 shadow-lg transition-shadow border select-none flex flex-col justify-between ${
         isAdmin ? 'cursor-move' : ''
       } ${
         isSelected
@@ -99,7 +99,7 @@ export default function MessageCard({
         left: `${cardX}px`,
         top: `${cardY}px`,
         width: `${cardWidth}px`,
-        minHeight: `${cardHeight}px`,
+        height: `${cardHeight}px`,
         backgroundColor: msg.color || '#fce7f3',
         fontFamily: msg.font || 'Gaegu',
         transform: `rotate(${rotation}deg)`,
@@ -112,28 +112,31 @@ export default function MessageCard({
 
       {/* Admin Quick Handle Badge */}
       {isAdmin && (
-        <div className="absolute -top-3 left-3 bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow flex items-center gap-1 opacity-80 group-hover:opacity-100">
+        <div className="absolute -top-3 left-3 bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow flex items-center gap-1 opacity-80 group-hover:opacity-100 no-print">
           <Move className="w-2.5 h-2.5" />
           <span>드래그 이동 가능</span>
         </div>
       )}
 
-      {/* Author Header */}
-      <div className="mb-2 pr-8">
-        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
-          From
-        </span>
-        <h4 className="text-base font-bold text-gray-900 leading-tight">
-          {msg.author}
-        </h4>
-      </div>
+      {/* Main Content Wrap */}
+      <div className="flex-1 flex flex-col justify-start overflow-hidden">
+        {/* Author Header */}
+        <div className="mb-1.5 pr-8 flex-shrink-0">
+          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
+            From
+          </span>
+          <h4 className="text-base font-bold text-gray-900 leading-tight">
+            {msg.author}
+          </h4>
+        </div>
 
-      {/* Content */}
-      <div
-        className="text-gray-800 leading-relaxed whitespace-pre-wrap overflow-hidden"
-        style={{ fontSize: `${fontSize}px` }}
-      >
-        {msg.content}
+        {/* Content */}
+        <div
+          className="text-gray-800 leading-relaxed whitespace-pre-wrap overflow-auto flex-1"
+          style={{ fontSize: `${fontSize}px` }}
+        >
+          {msg.content}
+        </div>
       </div>
 
       {/* Footer Date / Metadata */}
@@ -155,7 +158,7 @@ export default function MessageCard({
 
       {/* Selection Border Glow */}
       {isSelected && isAdmin && (
-        <div className="absolute -bottom-2 left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow">
+        <div className="absolute -bottom-2 left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow no-print">
           선택됨
         </div>
       )}
@@ -164,7 +167,7 @@ export default function MessageCard({
       {(isAdmin || isSelected) && (
         <div
           onMouseDown={handleResizeMouseDown}
-          className="absolute -bottom-2.5 -right-2.5 w-7 h-7 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center cursor-se-resize shadow-lg z-40 transition-transform hover:scale-125 group/resize border-2 border-white"
+          className="absolute -bottom-2.5 -right-2.5 w-7 h-7 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center cursor-se-resize shadow-lg z-40 transition-transform hover:scale-125 group/resize border-2 border-white no-print"
           title="마우스로 드래그하여 크기 조절"
         >
           <Maximize2 className="w-3.5 h-3.5" />
