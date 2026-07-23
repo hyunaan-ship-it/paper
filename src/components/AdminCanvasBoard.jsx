@@ -18,7 +18,8 @@ import {
   Heart,
   Printer,
   FileText,
-  LayoutGrid
+  LayoutGrid,
+  Plus
 } from 'lucide-react';
 import MessageCard from './MessageCard';
 import html2canvas from 'html2canvas';
@@ -29,6 +30,10 @@ export default function AdminCanvasBoard({
   isAdmin,
   isBoardPublished = true,
   onToggleBoardPublished,
+  pageCount = 1,
+  onSetPageCount,
+  currentPage = 1,
+  onChangePage,
   onUpdateMessage,
   onDeleteMessage,
   onBatchUpdateMessages,
@@ -40,6 +45,28 @@ export default function AdminCanvasBoard({
   const canvasRef = useRef(null);
 
   const selectedMsg = messages.find((m) => m.id === selectedId);
+
+  // Calculate total pages and visible messages for current page
+  const maxMsgPage = messages.reduce((max, m) => Math.max(max, m.page || 1), 1);
+  const totalPages = Math.max(pageCount || 1, maxMsgPage);
+  const visibleMessages = messages.filter((m) => (m.page || 1) === currentPage);
+
+  const handleAddPage = () => {
+    const nextCount = totalPages + 1;
+    onSetPageCount(nextCount);
+    onChangePage(nextCount);
+  };
+
+  const handleDeleteCurrentPage = () => {
+    if (totalPages <= 1) return;
+    if (window.confirm(`${currentPage}페이지를 삭제하고 페이지 내 메시지를 정리하시겠습니까?`)) {
+      const pageMsgs = messages.filter((m) => (m.page || 1) === currentPage);
+      pageMsgs.forEach((m) => onDeleteMessage(m.id));
+      const nextCount = Math.max(1, totalPages - 1);
+      onSetPageCount(nextCount);
+      onChangePage(Math.min(currentPage, nextCount));
+    }
+  };
 
   // Position & Size updates during drag
   const handleUpdatePosition = (id, newX, newY) => {
@@ -61,9 +88,13 @@ export default function AdminCanvasBoard({
     const startX = 45;
     const startY = 45;
 
-    const updated = messages.map((msg, idx) => {
-      const col = idx % colCount;
-      const row = Math.floor(idx / colCount);
+    // Align messages on current page
+    const updated = messages.map((msg) => {
+      if ((msg.page || 1) !== currentPage) return msg;
+      const idxOnPage = visibleMessages.findIndex((m) => m.id === msg.id);
+      if (idxOnPage < 0) return msg;
+      const col = idxOnPage % colCount;
+      const row = Math.floor(idxOnPage / colCount);
       return {
         ...msg,
         x: startX + col * (itemWidth + gapX),
@@ -88,9 +119,12 @@ export default function AdminCanvasBoard({
     const startX = 40;
     const startY = 40;
 
-    const updated = messages.map((msg, idx) => {
-      const col = idx % colCount;
-      const row = Math.floor(idx / colCount);
+    const updated = messages.map((msg) => {
+      if ((msg.page || 1) !== currentPage) return msg;
+      const idxOnPage = visibleMessages.findIndex((m) => m.id === msg.id);
+      if (idxOnPage < 0) return msg;
+      const col = idxOnPage % colCount;
+      const row = Math.floor(idxOnPage / colCount);
       return {
         ...msg,
         x: startX + col * (itemWidth + gapX),
@@ -117,7 +151,7 @@ export default function AdminCanvasBoard({
     window.print();
   };
 
-  // High-Resolution PNG Export (scale: 3 for high-density physical printing)
+  // High-Resolution PNG Export
   const handleExportPNG = async () => {
     if (!canvasRef.current) return;
     setIsExporting(true);
@@ -130,7 +164,7 @@ export default function AdminCanvasBoard({
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
-      link.download = `${receiver}_롤링페이퍼_${paperSize}_인쇄용.png`;
+      link.download = `${receiver}_롤링페이퍼_${currentPage}페이지_${paperSize}.png`;
       link.click();
     } catch (err) {
       console.error('Failed to export canvas image', err);
@@ -186,7 +220,7 @@ export default function AdminCanvasBoard({
           <div className="flex items-center gap-2">
             <span className="bg-purple-700 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5 text-amber-300" />
-              관리자 모드 ({paperSize} 규격 모드)
+              관리자 모드 ({paperSize} 규격 · {currentPage}/{totalPages}P)
             </span>
           </div>
 
@@ -204,6 +238,46 @@ export default function AdminCanvasBoard({
               {isBoardPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               <span>{isBoardPublished ? '🌐 보드 공개 중' : '🔒 보드 비공개 모드'}</span>
             </button>
+
+            {/* Admin Multi-Page Selector & Page Creator */}
+            <div className="flex items-center gap-1 bg-purple-950 p-1 rounded-lg border border-purple-700 text-xs">
+              <span className="text-purple-300 font-bold px-1 text-[11px]">페이지:</span>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => onChangePage(p)}
+                  className={`px-2.5 py-1 rounded-md font-bold transition flex items-center gap-1 ${
+                    currentPage === p
+                      ? 'bg-pink-500 text-white shadow'
+                      : 'bg-purple-800 text-purple-200 hover:bg-purple-700'
+                  }`}
+                >
+                  <span>{p}P</span>
+                  <span className="opacity-75 text-[10px]">
+                    ({messages.filter((m) => (m.page || 1) === p).length})
+                  </span>
+                </button>
+              ))}
+
+              <button
+                onClick={handleAddPage}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-md flex items-center gap-1 transition text-xs ml-1 shadow"
+                title="새로운 롤링페이퍼 페이지를 추가합니다"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ 새 페이지</span>
+              </button>
+
+              {totalPages > 1 && (
+                <button
+                  onClick={handleDeleteCurrentPage}
+                  className="px-2 py-1 bg-red-600/80 hover:bg-red-600 text-white font-bold rounded-md transition text-xs"
+                  title="현재 페이지 삭제"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
 
             {/* Paper Size Switch Buttons */}
             <div className="flex items-center bg-purple-950 p-0.5 rounded-lg border border-purple-700 text-xs">
@@ -225,24 +299,23 @@ export default function AdminCanvasBoard({
               </button>
             </div>
 
-            {/* A4 Alignment */}
+            {/* Grid Alignments */}
             <button
               onClick={handleAlignA4}
               className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
               title="15~16명이 작성한 메시지를 가로 A4 용지에 맞게 4x4 그리드로 정렬합니다"
             >
               <LayoutGrid className="w-3.5 h-3.5 text-pink-300" />
-              <span>📐 A4 정렬 (4x4)</span>
+              <span>📐 A4 정렬</span>
             </button>
 
-            {/* A3 Alignment */}
             <button
               onClick={handleAlignA3}
               className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
               title="20명 이상 메시지를 가로 A3 용지에 맞게 5x4 그리드로 정렬합니다"
             >
               <Grid className="w-3.5 h-3.5 text-amber-300" />
-              <span>📐 A3 정렬 (5x4)</span>
+              <span>📐 A3 정렬</span>
             </button>
 
             {/* Print Direct */}
@@ -252,7 +325,7 @@ export default function AdminCanvasBoard({
               title={`${paperSize} 종이로 바로 인쇄하거나 PDF로 저장합니다`}
             >
               <Printer className="w-3.5 h-3.5 text-blue-200" />
-              <span>𖤓 {paperSize} 직접 인쇄 / PDF</span>
+              <span>𖤓 인쇄 · PDF</span>
             </button>
 
             {/* High-Res PNG Export */}
@@ -262,7 +335,7 @@ export default function AdminCanvasBoard({
               className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition"
             >
               <Camera className="w-3.5 h-3.5" />
-              <span>{isExporting ? '고화질 생성 중...' : `${paperSize} PNG 이미지 저장`}</span>
+              <span>{isExporting ? '생성 중...' : `${currentPage}P PNG 저장`}</span>
             </button>
           </div>
 
@@ -271,14 +344,14 @@ export default function AdminCanvasBoard({
 
       {/* Selected Card Control Bar (Floating when a card is selected in Admin mode) */}
       {isAdmin && selectedMsg && (
-        <div className="bg-white/90 backdrop-blur-md border border-purple-200 p-4 shadow-xl fixed bottom-6 left-1/2 -translate-x-1/2 z-40 rounded-2xl max-w-3xl w-[92%] animate-fadeIn space-y-3 no-print">
+        <div className="bg-white/90 backdrop-blur-md border border-purple-200 p-4 shadow-xl fixed bottom-6 left-1/2 -translate-x-1/2 z-40 rounded-2xl max-w-4xl w-[94%] animate-fadeIn space-y-3 no-print">
           
           <div className="flex items-center justify-between border-b border-gray-100 pb-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-extrabold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
                 선택된 카드
               </span>
-              <h4 className="font-bold text-gray-800 text-sm">From: {selectedMsg.author}</h4>
+              <h4 className="font-bold text-gray-800 text-sm">From: {selectedMsg.author} ({selectedMsg.page || 1}페이지)</h4>
             </div>
             <button
               onClick={() => setSelectedId(null)}
@@ -288,7 +361,26 @@ export default function AdminCanvasBoard({
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+            {/* Target Page Selector for Selected Card */}
+            <div>
+              <label className="font-bold text-gray-700 flex items-center justify-between mb-1">
+                <span className="flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5 text-purple-500" /> 위치 페이지
+                </span>
+                <span className="text-purple-600 font-extrabold">{selectedMsg.page || 1}P</span>
+              </label>
+              <select
+                value={selectedMsg.page || 1}
+                onChange={(e) => onUpdateMessage(selectedMsg.id, { page: parseInt(e.target.value) })}
+                className="w-full px-2 py-1 bg-white border border-purple-300 rounded-lg text-xs accent-purple-600 font-bold focus:outline-none"
+              >
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <option key={p} value={p}>{p} 페이지로 이동</option>
+                ))}
+              </select>
+            </div>
+
             {/* Font Size Slider */}
             <div>
               <label className="font-bold text-gray-700 flex items-center justify-between mb-1">
@@ -425,30 +517,22 @@ export default function AdminCanvasBoard({
           >
             <span className="bg-purple-100/90 text-purple-700 text-[11px] font-bold px-2.5 py-1 rounded-md shadow-sm border border-purple-200 no-print">
               {paperSize === 'A3'
-                ? '📄 가로 A3 대형 인쇄 용지 영역 가이드 (5x4 20명 카드 보관함)'
-                : '📄 가로 A4 인쇄 용지 영역 가이드 (4x4 16명 카드 보관함)'}
+                ? `📄 가로 A3 대형 용지 가이드 (${currentPage}/${totalPages} 페이지)`
+                : `📄 가로 A4 용지 가이드 (${currentPage}/${totalPages} 페이지)`}
             </span>
           </div>
         )}
 
-        {/* Background Cat Mascot Image Watermark */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-25 select-none">
-          <img
-            src="./cat_photographer.png"
-            alt="보드 백그라운드 파스텔 고양이"
-            className="w-[480px] h-[480px] object-contain drop-shadow-sm animate-pulse-subtle"
-            style={{ mixBlendMode: 'multiply' }}
-          />
-        </div>
-
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-400">
             <Sparkles className="w-12 h-12 text-purple-300 mb-2 animate-bounce" />
-            <p className="font-bold text-gray-600 text-lg">아직 작성된 메시지가 없습니다.</p>
-            <p className="text-xs text-gray-400 mt-1">상단의 '메시지 작성하기' 탭에서 첫 번째 응원을 남겨보세요!</p>
+            <p className="font-bold text-gray-600 text-lg">
+              {totalPages > 1 ? `${currentPage}페이지에 작성된 메시지가 없습니다.` : '아직 작성된 메시지가 없습니다.'}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">상단의 '메시지 작성하기' 탭에서 따뜻한 마음을 남겨보세요!</p>
           </div>
         ) : (
-          messages.map((msg) => (
+          visibleMessages.map((msg) => (
             <MessageCard
               key={msg.id}
               msg={msg}
@@ -463,6 +547,44 @@ export default function AdminCanvasBoard({
         )}
       </div>
 
+      {/* Floating Multi-Page Pagination Bar (For all users when pageCount > 1) */}
+      {totalPages > 1 && (
+        <div className="fixed bottom-6 right-8 z-30 bg-white/95 backdrop-blur-md border-2 border-purple-300 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-3 no-print animate-fadeIn">
+          <button
+            disabled={currentPage <= 1}
+            onClick={() => onChangePage(currentPage - 1)}
+            className="px-3 py-1 bg-purple-100 text-purple-700 disabled:opacity-30 font-bold rounded-xl hover:bg-purple-200 transition text-xs"
+          >
+            ◀ 이전
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => onChangePage(p)}
+                className={`w-8 h-8 rounded-xl text-xs font-black transition flex items-center justify-center ${
+                  currentPage === p
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-purple-100'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            disabled={currentPage >= totalPages}
+            onClick={() => onChangePage(currentPage + 1)}
+            className="px-3 py-1 bg-purple-100 text-purple-700 disabled:opacity-30 font-bold rounded-xl hover:bg-purple-200 transition text-xs"
+          >
+            다음 ▶
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }
+

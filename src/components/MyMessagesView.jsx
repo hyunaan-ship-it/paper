@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { KeyRound, Lock, UserCheck, Trash2, Edit, Sparkles, Check, X, EyeOff } from 'lucide-react';
-import CatMascot from './CatMascot';
 
 export default function MyMessagesView({
   messages,

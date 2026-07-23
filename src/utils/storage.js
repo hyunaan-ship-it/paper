@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 const STORAGE_KEY_MESSAGES = 'rolling_paper_messages_v1';
 const STORAGE_KEY_RECEIVER = 'rolling_paper_receiver_v1';
 const STORAGE_KEY_PUBLISHED = 'rolling_paper_published_v1';
+const STORAGE_KEY_PAGE_COUNT = 'rolling_paper_page_count_v1';
 
 export const ADMIN_PASSWORD = 'a12345x';
 
@@ -23,6 +24,7 @@ const SAMPLE_MESSAGES = [
     width: 280,
     height: 220,
     rotation: -2,
+    page: 1,
     createdAt: new Date().toISOString(),
   },
   {
@@ -39,6 +41,7 @@ const SAMPLE_MESSAGES = [
     width: 290,
     height: 210,
     rotation: 3,
+    page: 1,
     createdAt: new Date().toISOString(),
   },
   {
@@ -55,6 +58,7 @@ const SAMPLE_MESSAGES = [
     width: 310,
     height: 230,
     rotation: -1,
+    page: 1,
     createdAt: new Date().toISOString(),
   }
 ];
@@ -74,6 +78,7 @@ const mapDBMessageToApp = (dbMsg) => ({
   width: dbMsg.width,
   height: dbMsg.height,
   rotation: dbMsg.rotation,
+  page: dbMsg.page || 1,
   createdAt: dbMsg.created_at || dbMsg.createdAt,
 });
 
@@ -91,6 +96,7 @@ const mapAppMessageToDB = (appMsg) => ({
   width: appMsg.width,
   height: appMsg.height,
   rotation: appMsg.rotation,
+  page: appMsg.page || 1,
   created_at: appMsg.createdAt || new Date().toISOString(),
 });
 
@@ -170,6 +176,45 @@ export const setIsBoardPublished = async (published) => {
   window.dispatchEvent(new Event('storage-messages-updated'));
 };
 
+export const fetchPageCountAsync = async () => {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data } = await supabase
+        .from('receiver_settings')
+        .select('page_count')
+        .eq('id', 1)
+        .single();
+      if (data && data.page_count) {
+        localStorage.setItem(STORAGE_KEY_PAGE_COUNT, String(data.page_count));
+        return data.page_count;
+      }
+    } catch (e) {
+      console.warn('Supabase page_count fetch failed, fallback to local', e);
+    }
+  }
+  const val = localStorage.getItem(STORAGE_KEY_PAGE_COUNT);
+  return val ? parseInt(val) : 1;
+};
+
+export const getPageCount = () => {
+  const val = localStorage.getItem(STORAGE_KEY_PAGE_COUNT);
+  return val ? parseInt(val) : 1;
+};
+
+export const setPageCount = async (count) => {
+  localStorage.setItem(STORAGE_KEY_PAGE_COUNT, String(count));
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase
+        .from('receiver_settings')
+        .upsert({ id: 1, page_count: count, updated_at: new Date().toISOString() });
+    } catch (e) {
+      console.error('Failed to sync page_count to Supabase', e);
+    }
+  }
+  window.dispatchEvent(new Event('storage-messages-updated'));
+};
+
 export const fetchMessagesAsync = async () => {
   if (isSupabaseConfigured && supabase) {
     try {
@@ -216,6 +261,7 @@ export const addMessage = async (newMessage) => {
     height: 220,
     fontSize: 18,
     rotation: parseFloat((Math.random() * 6 - 3).toFixed(1)),
+    page: newMessage.page || 1,
     createdAt: new Date().toISOString(),
     ...newMessage,
   };
@@ -255,6 +301,7 @@ export const updateMessage = async (id, updatedFields) => {
       if (updatedFields.width !== undefined) dbFields.width = updatedFields.width;
       if (updatedFields.height !== undefined) dbFields.height = updatedFields.height;
       if (updatedFields.rotation !== undefined) dbFields.rotation = updatedFields.rotation;
+      if (updatedFields.page !== undefined) dbFields.page = updatedFields.page;
 
       await supabase.from('messages').update(dbFields).eq('id', id);
     } catch (e) {

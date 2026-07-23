@@ -20,7 +20,13 @@ const FONTS = [
 
 const STICKERS = ['📷', '🐱', '🌸', '🎉', '💖', '☕', '✈️', '🍀', '🎁', '⭐'];
 
-export default function UserMessageForm({ receiver, onAddMessage, onSuccessRedirect }) {
+export default function UserMessageForm({
+  receiver,
+  pageCount = 1,
+  currentPage = 1,
+  onAddMessage,
+  onSuccessRedirect
+}) {
   const [author, setAuthor] = useState('');
   const [content, setContent] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +34,7 @@ export default function UserMessageForm({ receiver, onAddMessage, onSuccessRedir
   const [font, setFont] = useState(FONTS[0].value);
   const [fontSize, setFontSize] = useState(18);
   const [sticker, setSticker] = useState(STICKERS[0]);
+  const [selectedPage, setSelectedPage] = useState(currentPage || 1);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
@@ -45,6 +52,7 @@ export default function UserMessageForm({ receiver, onAddMessage, onSuccessRedir
       font,
       fontSize,
       sticker,
+      page: selectedPage,
     });
 
     setIsSubmitted(true);
@@ -96,6 +104,32 @@ export default function UserMessageForm({ receiver, onAddMessage, onSuccessRedir
         {/* Form Container */}
         <form onSubmit={handleSubmit} className="lg:col-span-7 glass-panel p-6 sm:p-8 space-y-6">
           
+          {/* Target Page Selector if multiple pages exist */}
+          {pageCount > 1 && (
+            <div className="bg-purple-50/80 border border-purple-200 p-3 rounded-xl">
+              <label className="block text-xs font-bold text-purple-900 mb-1.5 flex items-center justify-between">
+                <span>📌 등록할 롤링페이퍼 페이지 선택</span>
+                <span className="text-[11px] text-purple-600 font-normal">총 {pageCount}개 페이지 중 선택</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setSelectedPage(p)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                      selectedPage === p
+                        ? 'bg-purple-600 text-white shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-purple-100 border border-purple-200'
+                    }`}
+                  >
+                    <span>📄 {p} 페이지</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Author & Password */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

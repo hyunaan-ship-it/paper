@@ -14,6 +14,9 @@ import {
   setReceiverName,
   getIsBoardPublished,
   setIsBoardPublished,
+  getPageCount,
+  setPageCount,
+  fetchPageCountAsync,
   fetchBoardPublishedAsync,
   fetchMessagesAsync,
   fetchReceiverNameAsync,
@@ -27,6 +30,8 @@ export default function App() {
   const [receiver, setReceiver] = useState(getReceiverName());
   const [messages, setMessages] = useState(getMessages());
   const [isBoardPublished, setIsBoardPublishedState] = useState(getIsBoardPublished());
+  const [pageCount, setPageCountState] = useState(getPageCount());
+  const [currentPage, setCurrentPage] = useState(1);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('board');
@@ -38,6 +43,8 @@ export default function App() {
       setReceiver(rec);
       const pub = await fetchBoardPublishedAsync();
       setIsBoardPublishedState(pub);
+      const pCount = await fetchPageCountAsync();
+      setPageCountState(pCount);
       const msgs = await fetchMessagesAsync();
       setMessages(msgs);
     };
@@ -49,6 +56,7 @@ export default function App() {
       setMessages(getMessages());
       setReceiver(getReceiverName());
       setIsBoardPublishedState(getIsBoardPublished());
+      setPageCountState(getPageCount());
     };
     window.addEventListener('storage-messages-updated', handleStorageUpdate);
     window.addEventListener('storage', handleStorageUpdate);
@@ -58,6 +66,7 @@ export default function App() {
       setMessages([...updatedMsgs]);
       setReceiver(getReceiverName());
       setIsBoardPublishedState(getIsBoardPublished());
+      setPageCountState(getPageCount());
     });
 
     return () => {
@@ -66,6 +75,11 @@ export default function App() {
       unsubscribe();
     };
   }, []);
+
+  const handleSetPageCount = async (newCount) => {
+    await setPageCount(newCount);
+    setPageCountState(newCount);
+  };
 
   const handleToggleBoardPublished = async () => {
     const nextVal = !isBoardPublished;
@@ -144,6 +158,10 @@ export default function App() {
             isAdmin={isAdmin}
             isBoardPublished={isBoardPublished}
             onToggleBoardPublished={handleToggleBoardPublished}
+            pageCount={pageCount}
+            onSetPageCount={handleSetPageCount}
+            currentPage={currentPage}
+            onChangePage={(p) => setCurrentPage(p)}
             onUpdateMessage={handleUpdateMessage}
             onDeleteMessage={handleDeleteMessage}
             onBatchUpdateMessages={handleBatchUpdateMessages}
@@ -154,6 +172,8 @@ export default function App() {
         {activeTab === 'write' && (
           <UserMessageForm
             receiver={receiver}
+            pageCount={pageCount}
+            currentPage={currentPage}
             onAddMessage={handleAddMessage}
             onSuccessRedirect={(tab) => setActiveTab(tab)}
           />

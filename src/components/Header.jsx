@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Shield, ShieldCheck, Heart, Sparkles, Download, Upload, Edit3, Check, Gift } from 'lucide-react';
-import CatMascot from './CatMascot';
 import confetti from 'canvas-confetti';
 
 export default function Header({
